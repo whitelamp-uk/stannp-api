@@ -14,13 +14,13 @@ $dbconn = new mysqli ('localhost',$un,$pw,$db);
 //$res = $s->whoami();
 //print_r($res);
 
-$c_list = $s->get_campaigns();
+$c_list = $s->campaigns_get ();
 foreach ($c_list as $c) { 
 	$ci = "INSERT IGNORE INTO campaigns SET ".sqltransform($c);
 	dbq($ci);
 
 	$groupid = $c['recipients_group'];
-	$r_list = $s->get_recipients_group($groupid);
+	$r_list = $s->get_recipients_group ($groupid);
 	foreach ($r_list as $rcp) {
 		$rcp['campaign_id'] = $c['id'];
 		$rcp['group_id'] = $groupid;
