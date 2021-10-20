@@ -40,7 +40,7 @@ class Stannp {
             throw new \Exception ("Failed to create recipients for campaign/group $name");
             return false;
         }
-        // Add a new campaign using template and group
+        // Add a new campaign using template and group IDs
         $campaign = [
             'name'              => $name,
             'type'              => 'letter',
@@ -67,12 +67,11 @@ class Stannp {
             'campaign_id'       => $campaign_id,
             'group_id'          => $group_id,
             'template_id'       => $template_id,
-            'letters'           => count ($recipients)
+            'recipients'        => count ($recipients)
         ];
     }
 
     public function campaigns ( ) {
-        $list = [];
         $response = $this->curl_get ('campaigns/list');
         if (!$response['success']) {
             throw new \Exception ("Failed to get campaigns");

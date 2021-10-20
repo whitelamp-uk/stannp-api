@@ -9,8 +9,8 @@ require __DIR__.'/../Stannp.php';
 // ANLs
 try {
     // stannp_mail() is in blotto2/scripts/functions.php
-    stannp_mail ('anl',$anls);
-    print_r ($anls);
+    $c = stannp_mail ('anl');
+    print_r ($c);
 }
 catch (\Exception $e) {
     fwrite (STDERR,$e->getMessage()."\n");
@@ -20,8 +20,8 @@ catch (\Exception $e) {
 // Winners
 try {
     // stannp_mail() is in blotto2/scripts/functions.php
-    $result = stannp_mail ('win',$wins);
-    print_r ($wins);
+    $c = stannp_mail ('win');
+    print_r ($c);
 }
 catch (\Exception $e) {
     fwrite (STDERR,$e->getMessage()."\n");
