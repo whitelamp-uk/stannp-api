@@ -4,8 +4,6 @@ namespace Whitelamp;
 
 require __DIR__.'/config.php';
 
-// https://www.stannp.com/uk/direct-mail-api/
-
 class Stannp {
 
     protected $timeout;
