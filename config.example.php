@@ -8,6 +8,7 @@ define ( 'STANNP_EMAIL_FROM',   'noreply@my.org'                            );
 
 define ( 'STANNP_THING',        'example_thing'     );
 
-// These are best used within your application context
-define ( 'STANNP_ERROR_LOG',    'example_thing'     );
+// These are used within your application configuration
+define ( 'STANNP_ERROR_LOG',    false               );
+define ( 'STANNP_TIMEOUT',      60                  );
 
