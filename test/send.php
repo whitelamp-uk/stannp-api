@@ -6,27 +6,51 @@ require '/home/blotto/config/dbh.cfg.php';
 require __DIR__.'/../Stannp.php';
 
 
-// ANLs
+// Create a campaign
+$name = 'Z-TEST-MARK-0017';
+$template_id = 128426;
+$recipients = [
+    [
+        'name_first' => 'Edna',
+        'name_last' => 'Graffic',
+        'address_1' => 'The Hollyhocks, 123 The Stroop',
+        'address_2' => '',
+        'address_3' => '',
+        'town' => 'Hugely',
+        'postcode' => 'HG3 3EG',
+        'user_var_1' => 'bcdegp',
+        'user_var_2' => 'ajkflm'
+    ]
+];
+$stannp = new \Whitelamp\Stannp ();
 try {
-    // stannp_mail() is in blotto2/scripts/functions.php
-    $c = stannp_mail ('anl');
-    print_r ($c);
+    $campaign = $stannp->campaign_create ($name,$template_id,$recipients);
 }
 catch (\Exception $e) {
-    fwrite (STDERR,$e->getMessage()."\n");
-    exit (101);
+    echo $e->getMessage()."\n";
 }
 
-// Winners
-try {
-    // stannp_mail() is in blotto2/scripts/functions.php
-    $c = stannp_mail ('win');
-    print_r ($c);
-}
-catch (\Exception $e) {
-    fwrite (STDERR,$e->getMessage()."\n");
-    exit (102);
-}
+/*
 
-exit (0);
+// Fetch all Stannp groups
+$stannp = new \Whitelamp\Stannp ();
+print_r ($stannp->groups());
+
+// Fetch Stannp recipients by group name
+$stannp = new \Whitelamp\Stannp ();
+print_r ($stannp->recipients('Z-TEST-MARK-0014'));
+
+// Fetch all Stannp campaigns
+$stannp = new \Whitelamp\Stannp ();
+print_r ($stannp->campaigns());
+
+// Fetch Stannp campaign by name
+$stannp = new \Whitelamp\Stannp ();
+print_r ($stannp->campaign('Z-TEST-MARK-0001'));
+
+$stannp = new \Whitelamp\Stannp ();
+print_r ($stannp->mailpieces('Z-TEST-MARK-0013'));
+
+*/
+
 
