@@ -11,6 +11,7 @@ $name = 'Z-TEST-MARK-0017';
 $template_id = 128426;
 $recipients = [
     [
+        'title' => 'Mx',
         'name_first' => 'Edna',
         'name_last' => 'Graffic',
         'address_1' => 'The Hollyhocks, 123 The Stroop',
