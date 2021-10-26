@@ -2,7 +2,6 @@
 
 require '/home/mark/blotto/blotto2/scripts/functions.php';
 require '/home/blotto/config/dbh.cfg.php';
-//require BLOTTO_STANNP_CLASS;
 require __DIR__.'/../Stannp.php';
 
 
