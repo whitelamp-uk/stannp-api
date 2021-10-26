@@ -75,8 +75,8 @@ class Stannp {
         // Notify the administrator
         mail (
             $this->email_admin,
-            "Stannp campaign '$name' is loaded",
-            "Campaign #$campaign_id '$name' has been loaded over the API ready for you to approve and book.\n\n",
+            "Stannp campaign $name is loaded",
+            "Campaign #$campaign_id $name has been loaded over the API ready for you to approve and book.\n\n",
             "From: {$this->email_from}\n"
         );
         return [
