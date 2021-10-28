@@ -13,6 +13,7 @@ class Stannp {
     protected $email_from;
     protected $campaign_list;
     protected $group_list;
+    protected $verbose;
 
     public function __construct ( ) {
         if (defined('STANNP_TIMEOUT')) {
@@ -28,11 +29,43 @@ class Stannp {
     }
 
     public function campaign ($name) {
-        if (!$this->campaign_list) {
-            $this->campaigns ();
-        }
-        foreach ($this->campaign_list as $c) {
+        foreach ($this->campaigns() as $c) {
             if ($c['name']==$name) {
+                if ($c['recipients_group']) {
+                    $c['group_id'] = $c['recipients_group'];
+                    $group = $this->group_by_id ($c['group_id']);
+                    if ($group) {
+                        $response = $this->curl_get ('recipients/list/'.$group['id']);
+                        if (!$response['success']) {
+                            $this->exception (101,"Failed to get recipients for group #{$group['id']}");
+                            return false;
+                        }
+                        $rs = $response['data'];
+                        $ms = $this->mailpieces ($c['id']);
+                        foreach ($rs as $i=>$r) {
+                            foreach ($ms as $m) {
+                                if ($m['recipient_id']==$r['id']) {
+                                    $rs[$i]['mailpiece_status'] = $m['status'];
+                                    $rs[$i]['mailpiece_id'] = $m['id'];
+                                    break;
+                                }
+                            }
+                            if (!array_key_exists('mailpiece_status',$rs[$i])) {
+                                    $rs[$i]['mailpiece_status'] = null;
+                                    $rs[$i]['mailpiece_id'] = null;
+                            }
+                        }
+                        $c['recipient_list'] = $rs;
+                    }
+                    else {
+                        $c['group_id'] = null;
+                        $c['recipient_list'] = [];
+                    }
+                }
+                else {
+                    $c['group_id'] = null;
+                    $c['recipient_list'] = [];
+                }
                 return $c;
             }
         }
@@ -41,34 +74,43 @@ class Stannp {
     }
 
     public function campaign_create ($name,$template_id,$recipients) {
-        // Create the group
-        $response = $this->curl_post ('groups/new/',['name'=>$name]);
-        if (!$response->success) {
-            throw new \Exception ("Failed to create group $name");
-            return false;
-        }
-        $group_id = $response->data;
+        // House rules: campaign and group have the same name
+        $group_id = $this->group_create ($name);
         // Create recipients
         foreach ($recipients as $r) {
+            // TODO: add some enforcement of required fields see blotto2 stannp_fields_merge()
             $r['group_id'] = $group_id;
             $response = $this->curl_post ('recipients/new',$r);
             if (!$response->success) {
-                throw new \Exception ("Failed to create recipient {$r['ClientRef']} for campaign/group $name");
+                $this->exception (102,"Failed to create recipient {$r['ClientRef']} for campaign/group $name");
                 return false;
             }
         }
-        // Add a new campaign using template and group IDs
+        // Add a new campaign using template ID and group ID
         $campaign = [
             'name'              => $name,
             'type'              => 'letter',
             'template_id'       => $template_id,
-            'group_id'          => $group_id,
             'what_recipients'   => 'all',
             'addons'            => ''
         ];
+        /*
+            Stannp quirk. "Execute a method behind the scenes to
+            add recipient to a group by setting a property called
+            group_id".
+            It should really have been called next_group_id...
+        */
+        $campaign['group_id']   = $group_id; // Next group to join
+        /*
+            Put another way, Stanpp's API gives the false impression
+            to a programmer (expecting conventional property names)
+            that the relationship recipient:group is N:1.
+            It is actually N:M so that a recipient can be in many
+            undispatched campaigns.
+        */
         $response = $this->curl_post ('campaigns/new',$campaign);
         if (!$response->success) {
-            throw new \Exception ("Failed to create campaign $name");
+            $this->exception (103,"Failed to create campaign $name");
             return false;
         }
         $campaign_id = $response->data;
@@ -89,9 +131,12 @@ class Stannp {
     }
 
     public function campaigns ( ) {
+        if ($this->campaign_list) {
+            return $this->campaign_list;
+        }
         $response = $this->curl_get ('campaigns/list');
         if (!$response['success']) {
-            throw new \Exception ("Failed to get campaigns");
+            $this->exception (104,"Failed to get campaigns");
             return false;
         }
         $this->campaign_list = $response['data'];
@@ -117,8 +162,7 @@ class Stannp {
         );
 		$response = json_decode ($result, true);
         if (!$response) {
-            $this->error_log (101,'cURL GET error');
-            throw new \Exception ('cURL GET error');
+            $this->exception (105,"cURL GET error");
             return false;
         }
 		return $response;
@@ -127,7 +171,7 @@ class Stannp {
     private function curl_post ($request,$post,$options=[]) {
         // Modified from PHP manual
         if (!is_array($post) || !is_array($options)) {
-            throw new \Exception ('Post and option arguments must be arrays');
+            $this->exception (106,"Post and option arguments must be arrays");
             return false;
         }
         $defaults = array (
@@ -143,21 +187,19 @@ class Stannp {
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
         if (!$result=curl_exec($ch)) {
-            $this->error_log (102,curl_error($ch));
-            throw new \Exception ("cURL POST error");
+            $this->exception (107,"cURL POST error");
             return false;
         }
         curl_close ($ch);
         return json_decode ($result);
-    } 
+    }
 
-    private function error_log ($code,$message) {
-        $this->errorCode    = $code;
-        $this->error        = $message;
-        if (!defined('STANNP_ERROR_LOG') || !STANNP_ERROR_LOG) {
-            return;
+    private function exception ($code,$message) {
+        if (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG) {
+            error_log ($code.' '.$message);
         }
-        error_log ($code.' '.$message);
+        throw new \Exception ($message,$code);
+        return false;
     }
 
     public function group ($name) {
@@ -172,24 +214,66 @@ class Stannp {
         return false;
     }
 
+    public function group_by_id ($id) {
+        if (!$this->group_list) {
+            $this->groups ();
+        }
+        foreach ($this->group_list as $g) {
+            if ($g['id']==$id) {
+                return $g;
+            }
+        }
+        return false;
+    }
+
+    public function group_create ($name) {
+        $response = $this->curl_post ('groups/new/',['name'=>$name]);
+        if (!$response->success) {
+            $this->exception (108,"Failed to create group $name");
+            return false;
+        }
+        return $response->data;
+    }
+
     public function groups ( ) {
         $response = $this->curl_get ('groups/list');
         if (!$response['success']) {
-            throw new \Exception ("Failed to get groups");
+            $this->exception (109,"Failed to get groups");
             return false;
         }
         $this->group_list = $response['data'];
         return $this->group_list;
     }
 
-    public function mailpieces ($name) {
-        $campaign = $this->campaign ($name);
-        if (!$campaign) {
+    public function info ($message,$verbose) {
+        if ($verbose) {
+            echo $message;
+        }
+    }
+
+    public function mailpieces ($campaign_id) {
+        $response = $this->curl_get ('reporting/campaignSingles/'.$campaign_id);
+        if (!$response['success']) {
+            $this->exception (110,"Failed to get mailpieces for campaign #$campaign_id");
             return false;
         }
-        $response = $this->curl_get ('reporting/campaignSingles/'.$campaign['id']);
+        return $response['data'];
+    }
+
+    public function memberships ($recipient_id) {
+        $response = $this->curl_get ('groups/memberships/'.$recipient_id);
         if (!$response['success']) {
-            throw new \Exception ("Failed to get mailpieces for campaign {$campaign['id']}");
+            $this->exception (111,"Failed to get membership of groups for recipient #$recipient_id");
+            return false;
+        }
+        return $response['data'];
+    }
+
+    private function recipient_delete ($id) {
+        $this->info ('    Deleting user #$id\n');
+        $response = $this->curl_post ('recipients/delete/',['id'=>$id]);
+        if (!$response['success']) {
+            $this->exception (114,"Failed to delete recipient #$id");
             return false;
         }
         return $response['data'];
@@ -197,36 +281,97 @@ class Stannp {
 
     public function recipients ($name) {
         $campaign = $this->campaign ($name);
-        $group = $this->group ($name);
-        $response = $this->curl_get ('recipients/list/'.$group['id']);
-        if (!$response['success']) {
-            throw new \Exception ("Failed to get recipients for group #{$group['id']}");
+        if (!$campaign) {
+            $this->exception (112,"Could not find campaign '$name'");
             return false;
         }
-        $recipients     = $response['data'];
-        $mailpieces = $this->mailpieces ($name);
-        foreach ($recipients as $i=>$r) {
-            foreach ($mailpieces as $m) {
-                if ($m['recipient_id']==$r['id']) {
-                    $recipients[$i]['mailpiece_id'] = $m['id'];
-                    $recipients[$i]['mailpiece_dispatched'] = $m['dispatched'];
-                    $recipients[$i]['mailpiece_status'] = $m['status'];
-                    break;
+        return $campaign->recipient_list;
+    }
+
+    public function recipients_redact ($campaign_left_match,$v=false) {
+        $ids = $this->recipients_redactable_ids ($campaign_left_match,$v);
+        $this->info ("Redacting ".count($ids)." recipients\n",$v);
+        foreach ($ids as $id) {
+// TODO: be brave and switch it on
+            $this->info ("    Eventually deleting user #$id\n",$v);
+//            $this->recipient_delete ($id);
+//            $this->info ("    Deleted user #$id\n",$v);
+        }
+        return true;
+    }
+
+    public function recipients_redactable_ids ($campaign_left_match,$v=false) {
+        $campaign_left_match = trim ($campaign_left_match);
+        if (strlen($campaign_left_match)<STANNP_REDACT_SCOPE_LEN) {
+            $this->exception (113,"Redaction requires a campaign name left-matching string for limiting scope");
+            return false;
+        }
+        $response = $this->curl_get ('recipients/list/');
+        if (!$response['success']) {
+            $this->exception (114,"Failed to get all recipients");
+            return false;
+        }
+        $campaigns = $this->campaigns ();
+        $redactable = [];
+        foreach ($campaigns as $c) {
+            $this->info ("Campaign #{$c['id']} {$c['name']}\n",$v);
+            if (strpos(trim($c['name']),$campaign_left_match)!==0) {
+                $this->info ("    skipping (does not begin with '$campaign_left_match')\n",false);
+                continue;
+            }
+            $c = $this->campaign ($c['name']);
+            if ($c['status']=='complete') {
+                $this->info ("    complete\n",$v);
+                $this->info ("    ".count($c['recipient_list'])." recipients\n",$v);
+                $c = $this->campaign ($c['name']);
+                $delivered = [];
+                foreach ($c['recipient_list'] as $i=>$r) {
+                    if ($r['mailpiece_status']=='delivered') {
+                        $delivered[$r['id']] = true;
+                    }
+                }
+                $this->info ("        ".count($delivered)." delivered\n",$v);
+                if (count($delivered)==count($c['recipient_list'])) {
+                    $this->info ("  redactable: ".count($delivered)."\n",$v);
+                    foreach ($delivered as $id=>$bool) {
+                        $redactable[$id] = true;
+                    }
                 }
             }
-            if (!array_key_exists('mailpiece_status',$recipients[$i])) {
-                    $recipients[$i]['mailpiece_id'] = null;
-                    $recipients[$i]['mailpiece_dispatched'] = 'campaign_'.$campaign['dispatched'];
-                    $recipients[$i]['mailpiece_status'] = 'campaign_'.$campaign['status'];
+            else {
+                $this->info ("    incomplete\n",$v);
             }
         }
-        return $recipients;
+        if ($count=count($redactable)) {
+            $this->info ("$count recipients found to redact but:\n",$v);
+            $this->info ("Do not redact a recipient if either in a campaign is incomplete or having a mailpiece that is undelivered\n",$v);
+            foreach ($campaigns as $c) {
+                $this->info ("    Campaign #{$c['id']} {$c['name']}\n",$v);
+                $c = $this->campaign ($c['name']);
+                foreach ($c['recipient_list'] as $i=>$r) {
+                    if (array_key_exists($r['id'],$redactable)) {
+                        if ($c['status']!='complete' || $r['mailpiece_status']!='delivered') {
+                            $this->info ("        Removing recipient #{$r['id']} : {$r['full_name']} : {$r['mailpiece_status']} :: campaign #{$c['id']} : {$c['name']} : {$c['status']}\n");
+                            unset ($redactable[$r['id']]);
+                        }
+                    }
+                }
+            }
+        }
+        ksort ($redactable);
+        $ids = [];
+        foreach ($redactable as $id=>$bool) {
+            $ids[] = $id;
+        }
+        $this->info ("Now ".count($ids)." recipients to redact:\n".implode(',',$ids)."\n",$v);
+        return $ids;
     }
 
     public function whoami ( ) {
         $response = $this->curl_get ('users/me');
         if (!$response->success) {
-            throw new \Exception ("Failed to get account data");
+            throw new \Exception ();
+                $this->exception (115,"Failed to get account data");
             return false;
         }
         return $response->data;
