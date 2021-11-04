@@ -85,6 +85,7 @@ class Stannp {
                 $this->exception (102,"Failed to create recipient {$r['ClientRef']} for campaign/group $name");
                 return false;
             }
+            $this->log (print_r($r,true));
         }
         // Add a new campaign using template ID and group ID
         $campaign = [
@@ -248,6 +249,12 @@ class Stannp {
     public function info ($message,$verbose) {
         if ($verbose) {
             echo $message;
+        }
+    }
+
+    private function log ($message) {
+        if (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG) {
+            error_log ($message);
         }
     }
 
