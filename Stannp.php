@@ -85,7 +85,7 @@ class Stannp {
                 $this->exception (102,"Failed to create recipient {$r['ClientRef']} for campaign/group $name");
                 return false;
             }
-            $this->log (print_r($r,true));
+            $this->log ("Stannp successfully posted recipient: ".print_r($r,true));
         }
         // Add a new campaign using template ID and group ID
         $campaign = [
