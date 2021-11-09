@@ -117,7 +117,10 @@ class Stannp {
                     $this->exception (103,"`$f` is a compulsory Stannp field");
                     return false;
                 }
-                $r[$f] = trim ($r[$f]);
+                if ($f=='postcode' && !preg_match('<'.STANNP_POSTCODE_PREG.'>',$r[$f])) {
+                    $this->exception (104,"Postcode '{$r[$f]}' is not valid");
+                    return false;
+                }
             }
             $response = $this->curl_post ('recipients/new',$r);
             if (!$response->success) {
