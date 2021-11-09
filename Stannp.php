@@ -78,11 +78,50 @@ class Stannp {
         $group_id = $this->group_create ($name);
         // Create recipients
         foreach ($recipients as $r) {
-            // TODO: add some enforcement of required fields see blotto2 stannp_fields_merge()
-            $r['group_id'] = $group_id;
+            // `barcode` is for Royal mail use and should never be passed
+            if (array_key_exists('barcode',$r)) {
+                $this->exception (102,"`barcode` is an illegal field name - reserved by Stannp for internal use");
+                return false;
+            }
+            // Overwrite any existing recipient with this newest data
+            $r['on_duplicate'] = 'update';
+            /*
+                Stannp quirk. "Execute a method behind the scenes to
+                add recipient to a group by setting a property called
+                group_id".
+                It should really have been called next_group_id...
+            */
+            $r['group_id'] = $group_id; // Next group to join
+            /*
+                Put another way, Stanpp's API gives the false impression
+                to a programmer (expecting conventional property names)
+                that the relationship recipient:group is N:1.
+                It is actually N:M so that a recipient can be in many
+                undispatched campaigns.
+            */
+            $fields = [
+                'full_name','job_title','company',
+                'address1','address2','address3','city','country','postcode'
+            ];
+            foreach ($fields as $f) {
+                if (!array_key_exists($f,$r)) {
+                    $r[$f] = '';
+                }
+                $r[$f] = trim ($r[$f]);
+            }
+            $fields = [
+                'full_name','address1','city','country','postcode'
+            ];
+            foreach ($fields as $f) {
+                if (!strlen($r[$f])) {
+                    $this->exception (103,"`$f` is a compulsory Stannp field");
+                    return false;
+                }
+                $r[$f] = trim ($r[$f]);
+            }
             $response = $this->curl_post ('recipients/new',$r);
             if (!$response->success) {
-                $this->exception (102,"Failed to create recipient {$r['ClientRef']} for campaign/group $name");
+                $this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
                 return false;
             }
             $this->log ("Stannp successfully posted recipient: ".print_r($r,true));
@@ -95,23 +134,10 @@ class Stannp {
             'what_recipients'   => 'all',
             'addons'            => ''
         ];
-        /*
-            Stannp quirk. "Execute a method behind the scenes to
-            add recipient to a group by setting a property called
-            group_id".
-            It should really have been called next_group_id...
-        */
-        $campaign['group_id']   = $group_id; // Next group to join
-        /*
-            Put another way, Stanpp's API gives the false impression
-            to a programmer (expecting conventional property names)
-            that the relationship recipient:group is N:1.
-            It is actually N:M so that a recipient can be in many
-            undispatched campaigns.
-        */
+        $campaign['group_id']   = $group_id;
         $response = $this->curl_post ('campaigns/new',$campaign);
         if (!$response->success) {
-            $this->exception (103,"Failed to create campaign $name");
+            $this->exception (105,"Failed to create campaign $name");
             return false;
         }
         $campaign_id = $response->data;
@@ -137,7 +163,7 @@ class Stannp {
         }
         $response = $this->curl_get ('campaigns/list');
         if (!$response['success']) {
-            $this->exception (104,"Failed to get campaigns");
+            $this->exception (106,"Failed to get campaigns");
             return false;
         }
         $this->campaign_list = $response['data'];
@@ -163,7 +189,7 @@ class Stannp {
         );
 		$response = json_decode ($result, true);
         if (!$response) {
-            $this->exception (105,"cURL GET error");
+            $this->exception (107,"cURL GET error");
             return false;
         }
 		return $response;
@@ -172,7 +198,7 @@ class Stannp {
     private function curl_post ($request,$post,$options=[]) {
         // Modified from PHP manual
         if (!is_array($post) || !is_array($options)) {
-            $this->exception (106,"Post and option arguments must be arrays");
+            $this->exception (108,"Post and option arguments must be arrays");
             return false;
         }
         $defaults = array (
@@ -188,7 +214,7 @@ class Stannp {
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
         if (!$result=curl_exec($ch)) {
-            $this->exception (107,"cURL POST error");
+            $this->exception (109,"cURL POST error");
             return false;
         }
         curl_close ($ch);
@@ -230,7 +256,7 @@ class Stannp {
     public function group_create ($name) {
         $response = $this->curl_post ('groups/new/',['name'=>$name]);
         if (!$response->success) {
-            $this->exception (108,"Failed to create group $name");
+            $this->exception (110,"Failed to create group $name");
             return false;
         }
         return $response->data;
@@ -239,7 +265,7 @@ class Stannp {
     public function groups ( ) {
         $response = $this->curl_get ('groups/list');
         if (!$response['success']) {
-            $this->exception (109,"Failed to get groups");
+            $this->exception (111,"Failed to get groups");
             return false;
         }
         $this->group_list = $response['data'];
@@ -261,7 +287,7 @@ class Stannp {
     public function mailpieces ($campaign_id) {
         $response = $this->curl_get ('reporting/campaignSingles/'.$campaign_id);
         if (!$response['success']) {
-            $this->exception (110,"Failed to get mailpieces for campaign #$campaign_id");
+            $this->exception (112,"Failed to get mailpieces for campaign #$campaign_id");
             return false;
         }
         return $response['data'];
@@ -270,7 +296,7 @@ class Stannp {
     public function memberships ($recipient_id) {
         $response = $this->curl_get ('groups/memberships/'.$recipient_id);
         if (!$response['success']) {
-            $this->exception (111,"Failed to get membership of groups for recipient #$recipient_id");
+            $this->exception (113,"Failed to get membership of groups for recipient #$recipient_id");
             return false;
         }
         return $response['data'];
@@ -289,7 +315,7 @@ class Stannp {
     public function recipients ($name) {
         $campaign = $this->campaign ($name);
         if (!$campaign) {
-            $this->exception (112,"Could not find campaign '$name'");
+            $this->exception (115,"Could not find campaign '$name'");
             return false;
         }
         return $campaign->recipient_list;
@@ -310,12 +336,12 @@ class Stannp {
     public function recipients_redactable_ids ($campaign_left_match,$v=false) {
         $campaign_left_match = trim ($campaign_left_match);
         if (strlen($campaign_left_match)<STANNP_REDACT_SCOPE_LEN) {
-            $this->exception (113,"Redaction requires a campaign name left-matching string for limiting scope");
+            $this->exception (116,"Redaction requires a campaign name left-matching string for limiting scope");
             return false;
         }
         $response = $this->curl_get ('recipients/list/');
         if (!$response['success']) {
-            $this->exception (114,"Failed to get all recipients");
+            $this->exception (117,"Failed to get all recipients");
             return false;
         }
         $campaigns = $this->campaigns ();
@@ -378,7 +404,7 @@ class Stannp {
         $response = $this->curl_get ('users/me');
         if (!$response->success) {
             throw new \Exception ();
-                $this->exception (115,"Failed to get account data");
+                $this->exception (118,"Failed to get account data");
             return false;
         }
         return $response->data;
