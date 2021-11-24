@@ -74,6 +74,10 @@ class Stannp {
     }
 
     public function campaign_create ($name,$template_id,$recipients) {
+        $v = false;
+        if (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG) {
+            $v = true;
+        }
         // House rules: campaign and group have the same name
         $group_id = $this->group_create ($name);
         // Create recipients
@@ -127,7 +131,7 @@ class Stannp {
                 $this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
                 return false;
             }
-            $this->log ("Stannp successfully posted recipient: ".print_r($r,true));
+            $this->info ("Stannp successfully posted recipient: ".print_r($r,true),$v);
         }
         // Add a new campaign using template ID and group ID
         $campaign = [
@@ -305,8 +309,8 @@ class Stannp {
         return $response['data'];
     }
 
-    private function recipient_delete ($id) {
-        $this->info ('    Deleting user #$id\n');
+    private function recipient_delete ($id,$v=false) {
+        $this->info ('    Deleting user #$id\n',$v);
         $response = $this->curl_post ('recipients/delete/',['id'=>$id]);
         if (!$response['success']) {
             $this->exception (114,"Failed to delete recipient #$id");
@@ -387,7 +391,7 @@ class Stannp {
                 foreach ($c['recipient_list'] as $i=>$r) {
                     if (array_key_exists($r['id'],$redactable)) {
                         if ($c['status']!='complete' || $r['mailpiece_status']!='delivered') {
-                            $this->info ("        Removing recipient #{$r['id']} : {$r['full_name']} : {$r['mailpiece_status']} :: campaign #{$c['id']} : {$c['name']} : {$c['status']}\n");
+                            $this->info ("        Removing recipient #{$r['id']} : {$r['full_name']} : {$r['mailpiece_status']} :: campaign #{$c['id']} : {$c['name']} : {$c['status']}\n",$v);
                             unset ($redactable[$r['id']]);
                         }
                     }
