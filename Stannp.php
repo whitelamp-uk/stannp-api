@@ -82,6 +82,12 @@ class Stannp {
         $group_id = $this->group_create ($name);
         // Create recipients
         foreach ($recipients as $r) {
+            // Stannp only thinks in lower case so honour that policy
+            $rlc = [];
+            foreach ($r as $key=>$val) {
+                $rlc[strtolower($key)] = $val;
+            }
+            $r = $rlc;
             // `barcode` is for Royal mail use and should never be passed
             if (array_key_exists('barcode',$r)) {
                 $this->exception (102,"`barcode` is an illegal field name - reserved by Stannp for internal use");
