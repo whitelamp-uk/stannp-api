@@ -132,12 +132,13 @@ class Stannp {
                     return false;
                 }
             }
+            $this->info ("Stannp posting recipient: ".print_r($r,true),$v);
             $response = $this->curl_post ('recipients/new',$r);
             if (!$response->success) {
                 $this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
                 return false;
             }
-            $this->info ("Stannp successfully posted recipient: ".print_r($r,true),$v);
+            $this->info ("Stannp successful\n",$v);
         }
         // Add a new campaign using template ID and group ID
         $campaign = [
