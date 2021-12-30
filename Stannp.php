@@ -122,17 +122,18 @@ class Stannp {
             $fields = [
                 'full_name','address1','city','country','postcode'
             ];
+            $this->info ("Stannp checking recipient: ".print_r($r,true),$v);
             foreach ($fields as $f) {
                 if (!strlen($r[$f])) {
                     $this->exception (103,"`$f` is a compulsory Stannp field");
                     return false;
                 }
                 if ($f=='postcode' && !preg_match('<'.STANNP_POSTCODE_PREG.'>',$r[$f])) {
-                    $this->exception (104,"Postcode '{$r[$f]}' is not valid");
+                    $this->exception (104,"Postcode '{$r[$f]}' is not valid against <".STANNP_POSTCODE_PREG.">");
                     return false;
                 }
             }
-            $this->info ("Stannp posting recipient: ".print_r($r,true),$v);
+            $this->info ("Stannp posting recipient\n",$v);
             $response = $this->curl_post ('recipients/new',$r);
             $this->info ("Stannp response: ".print_r($response,true),$v);
             if (!$response->success) {
