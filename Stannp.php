@@ -128,8 +128,8 @@ class Stannp {
                     $this->exception (103,"`$f` is a compulsory Stannp field");
                     return false;
                 }
-                if ($f=='postcode' && !preg_match('<'.STANNP_POSTCODE_PREG.'>',$r[$f])) {
-                    $this->exception (104,"Postcode '{$r[$f]}' is not valid against <".STANNP_POSTCODE_PREG.">");
+                if ($f=='postcode' && !preg_match('<'.BLOTTO_POSTCODE_PREG.'>',$r[$f])) {
+                    $this->exception (104,"Postcode '{$r[$f]}' is not valid against <".BLOTTO_POSTCODE_PREG.">");
                     return false;
                 }
             }
