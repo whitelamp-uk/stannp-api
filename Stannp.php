@@ -45,13 +45,16 @@ class Stannp {
                         foreach ($rs as $i=>$r) {
                             foreach ($ms as $m) {
                                 if ($m['recipient_id']==$r['id']) {
+                                    if (!$m['status']) {
+                                        $m['status'] = 'drafted';
+                                    }
                                     $rs[$i]['mailpiece_status'] = $m['status'];
                                     $rs[$i]['mailpiece_id'] = $m['id'];
                                     break;
                                 }
                             }
                             if (!array_key_exists('mailpiece_status',$rs[$i])) {
-                                    $rs[$i]['mailpiece_status'] = null;
+                                    $rs[$i]['mailpiece_status'] = 'drafted';
                                     $rs[$i]['mailpiece_id'] = null;
                             }
                         }
