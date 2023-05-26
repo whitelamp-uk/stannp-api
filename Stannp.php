@@ -223,6 +223,7 @@ class Stannp {
         $defaults = array (
             CURLOPT_POST            => 1,
             CURLOPT_HEADER          => 0,
+            CURLOPT_HTTP_VERSION    => CURL_HTTP_VERSION_1_1, // seems to be another php 7.4 bug
             CURLOPT_URL             => $this->url.$request.'?api_key='.$this->key,
             CURLOPT_FRESH_CONNECT   => 1,
             CURLOPT_RETURNTRANSFER  => 1,
