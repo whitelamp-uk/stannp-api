@@ -143,7 +143,7 @@ class Stannp {
                 $this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
                 return false;
             }
-            $this->info ("Stannp successful\n",$v);
+            $this->info ("Recipient created\n",$v);
         }
         // Add a new campaign using template ID and group ID
         $campaign = [
