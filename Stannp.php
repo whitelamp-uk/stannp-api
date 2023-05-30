@@ -234,7 +234,11 @@ class Stannp {
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
         if (!$result=curl_exec($ch)) {
-            $this->exception (109,"cURL POST error");
+            $this->log ("Stannp cURL POST error\n");
+            $this->log (print_r($post,true));
+            $this->log (print_r($options,true));
+            $this->log (print_r($defaults,true));
+            $this->exception (109,"Stannp cURL POST error");
             return false;
         }
         curl_close ($ch);
@@ -301,6 +305,9 @@ class Stannp {
     private function log ($message) {
         if (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG) {
             error_log ($message);
+        }
+        if (env_is_cli()) {
+            echo $message;
         }
     }
 
