@@ -233,11 +233,13 @@ class Stannp {
         );    
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
-        if (!$result=curl_exec($ch)) {
+        $result=curl_exec($ch);
+        if ($result === false) {
             $this->log ("Stannp cURL POST error\n");
-            $this->log (print_r($post,true));
-            $this->log (print_r($options,true));
-            $this->log (print_r($defaults,true));
+            $this->log ("post: ".print_r($post,true));
+            $this->log ("options: ". print_r($options,true));
+            $this->log ("defaults: ".print_r($defaults,true));
+            $this->log ("curl error: ".curl_error($ch));
             $this->exception (109,"Stannp cURL POST error");
             return false;
         }
