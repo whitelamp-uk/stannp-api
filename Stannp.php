@@ -235,13 +235,13 @@ class Stannp {
         curl_setopt_array ($ch,$options+$defaults);
         $result = curl_exec ($ch);
         curl_close ($ch);
-        if (!$result || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
+        if ($result===false || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
             $this->log ("Stannp cURL POST");
             $this->log (print_r($post,true));
             $this->log (print_r($options,true));
             $this->log (print_r($defaults,true));
         }
-        if (!$result) {
+        if (!$result===false) {
             $this->exception (109,"Stannp cURL POST error");
             return false;
         }
