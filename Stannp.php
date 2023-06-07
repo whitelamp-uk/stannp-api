@@ -240,13 +240,16 @@ class Stannp {
         ];    
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
+        $start = time ();
         $result = curl_exec ($ch);
+        $secs = time() - $start;
         curl_close ($ch);
         if ($result===false || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
             $this->log ("Stannp cURL POST");
             $this->log (print_r($post,true));
             $this->log (print_r($options,true));
             $this->log (print_r($defaults,true));
+            $this->log ("Turnaround time: $secs seconds");
         }
         if ($result===false) {
             $this->exception (109,"Stannp cURL POST error");
