@@ -310,7 +310,7 @@ class Stannp {
             error_log ($message);
         }
         if (env_is_cli()) {
-            echo $message;
+            echo rtrim($message)."\n";
         }
     }
 
