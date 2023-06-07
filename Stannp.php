@@ -201,17 +201,22 @@ class Stannp {
         // TODO: Is file_get_contents() the best way here? Seem to remember
         // something about server configuration constraints...
         // Also what is the timeout preset here and can we override it?
+        $url = $this->url.$request.'?api_key='.$this->key;
 		$result = file_get_contents (
-            $this->url.$request.'?api_key='.$this->key,
+            $url,
             false,
             $context
         );
-		$response = json_decode ($result, true);
-        if (!$response) {
-            $this->exception (107,"cURL GET error");
+        if ($result===false || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
+            $this->log ("Stannp cURL GET");
+            $this->log ($url);
+            $this->log (print_r($context,true));
+        }
+        if ($result===false) {
+            $this->exception (107,"Stannp cURL GET error");
             return false;
         }
-		return $response;
+        return json_decode ($result,true);
 	}
 
     private function curl_post ($request,$post,$options=[]) {
@@ -241,7 +246,7 @@ class Stannp {
             $this->log (print_r($options,true));
             $this->log (print_r($defaults,true));
         }
-        if (!$result===false) {
+        if ($result===false) {
             $this->exception (109,"Stannp cURL POST error");
             return false;
         }
