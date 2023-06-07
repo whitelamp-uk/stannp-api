@@ -154,7 +154,7 @@ class Stannp {
             'addons'            => ''
         ];
         $campaign['group_id']   = $group_id;
-        $response = $this->curl_post ('campaigns/new',$campaign);
+        $response = $this->curl_post ('campaigns/new',$campaign,[CURLOPT_TIMEOUT=>600]);
         if (!$response->success) {
             $this->exception (105,"Failed to create campaign $name");
             return false;
@@ -207,11 +207,13 @@ class Stannp {
             false,
             $context
         );
+/*
         if ($result===false || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
             $this->log ("Stannp cURL GET");
             $this->log ($url);
             $this->log (print_r($context,true));
         }
+*/
         if ($result===false) {
             $this->exception (107,"Stannp cURL GET error");
             return false;
@@ -225,7 +227,7 @@ class Stannp {
             $this->exception (108,"Post and option arguments must be arrays");
             return false;
         }
-        $defaults = array (
+        $defaults = [
             CURLOPT_POST            => 1,
             CURLOPT_HEADER          => 0,
             CURLOPT_HTTP_VERSION    => CURL_HTTP_VERSION_1_1, // seems to be another php 7.4 bug
@@ -235,7 +237,7 @@ class Stannp {
             CURLOPT_FORBID_REUSE    => 1,
             CURLOPT_TIMEOUT         => $this->timeout,
             CURLOPT_POSTFIELDS      => http_build_query ($post)
-        );    
+        ];    
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
         $result = curl_exec ($ch);
