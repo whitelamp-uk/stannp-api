@@ -72,7 +72,12 @@ class Stannp {
                 return $c;
             }
         }
-        fwrite (STDERR,"Campaign '$name' was not found\n");
+        if (defined('STDERR')) {
+            fwrite (STDERR,"Campaign '$name' was not found\n");
+        }
+        else {
+            error_log ("Campaign '$name' was not found");
+        }
         return false;
     }
 
