@@ -101,8 +101,8 @@ class Stannp {
                 $this->exception (102,"`barcode` is an illegal field name - reserved by Stannp for internal use");
                 return false;
             }
-            // Overwrite any existing recipient with this newest data
-            $r['on_duplicate'] = 'update';
+            // Do NOT overwrite any existing recipient with this newest data
+            $r['on_duplicate'] = 'duplicate';
             /*
                 Stannp quirk. "Execute a method behind the scenes to
                 add recipient to a group by setting a property called
