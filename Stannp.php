@@ -363,7 +363,7 @@ class Stannp {
             $this->exception (115,"Could not find campaign '$name'");
             return false;
         }
-        return $campaign->recipient_list;
+        return $campaign['recipient_list'];
     }
 
     public function recipients_redact ($campaign_left_match,$v=false) {
