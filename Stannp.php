@@ -11,7 +11,6 @@ class Stannp {
     protected $key;
     protected $email_admin;
     protected $email_from;
-    protected $campaign_list;
     protected $group_list;
     protected $verbose;
 
@@ -181,20 +180,17 @@ class Stannp {
         ];
     }
 
-    public function campaigns ( ) {
-        if ($this->campaign_list) {
-            return $this->campaign_list;
-        }
-        $response = $this->curl_get ('campaigns/list');
+    public function campaigns ($offset=0, $limit=0) {
+        $response = $this->curl_get ('campaigns/list', $offset, $limit);
         if (!$response['success']) {
             $this->exception (106,"Failed to get campaigns");
             return false;
         }
-        $this->campaign_list = $response['data'];
-        return $this->campaign_list;
+        //print_r($response);
+        return $response['data'];
     }
 
-	private function curl_get ($request) {   
+	private function curl_get ($request, $offset=0, $limit=0) {   
         // Modified from Stannp documentation
 		$opts = [
 		    'http' => [
@@ -207,6 +203,13 @@ class Stannp {
         // something about server configuration constraints...
         // Also what is the timeout preset here and can we override it?
         $url = $this->url.$request.'?api_key='.$this->key;
+        if ($offset) {
+            $url .="&offset=".$offset;
+        }
+        if ($limit) {
+            $url .="&limit=".$limit;
+        }
+        //echo $url."\n";
 		$result = file_get_contents (
             $url,
             false,
@@ -364,6 +367,11 @@ class Stannp {
             return false;
         }
         return $campaign['recipient_list'];
+    }
+
+    public function recipients_for_group ($group_id, $offset=0, $limit=0) {
+        $response = $this->curl_get ('recipients/list/'.$group_id, $offset, $limit);
+        return $response['data'];
     }
 
     public function recipients_redact ($campaign_left_match,$v=false) {
