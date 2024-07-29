@@ -195,13 +195,13 @@ class Stannp {
 		$opts = [
 		    'http' => [
 		        'method'  => 'GET',
-		        'header'  => 'Content-type: application/x-www-form-urlencoded'
+		        'header'  => 'Content-type: application/x-www-form-urlencoded',
+                'timeout' => $this->timeout
 		    ]
 		];
 		$context = stream_context_create ($opts);
         // TODO: Is file_get_contents() the best way here? Seem to remember
         // something about server configuration constraints...
-        // Also what is the timeout preset here and can we override it?
         $url = $this->url.$request.'?api_key='.$this->key;
         if ($offset) {
             $url .="&offset=".$offset;
