@@ -190,16 +190,16 @@ class Stannp {
         return $response['data'];
     }
 
-	private function curl_get ($request, $offset=0, $limit=0) {   
+    private function curl_get ($request, $offset=0, $limit=0) {   
         // Modified from Stannp documentation
-		$opts = [
-		    'http' => [
-		        'method'  => 'GET',
-		        'header'  => 'Content-type: application/x-www-form-urlencoded',
+        $opts = [
+            'http' => [
+                'method'  => 'GET',
+                'header'  => 'Content-type: application/x-www-form-urlencoded',
                 'timeout' => $this->timeout
-		    ]
-		];
-		$context = stream_context_create ($opts);
+            ]
+        ];
+        $context = stream_context_create ($opts);
         // TODO: Is file_get_contents() the best way here? Seem to remember
         // something about server configuration constraints...
         $url = $this->url.$request.'?api_key='.$this->key;
@@ -210,7 +210,7 @@ class Stannp {
             $url .="&limit=".$limit;
         }
         //echo $url."\n";
-		$result = file_get_contents (
+        $result = file_get_contents (
             $url,
             false,
             $context
@@ -227,7 +227,7 @@ class Stannp {
             return false;
         }
         return json_decode ($result,true);
-	}
+    }
 
     private function curl_post ($request,$post,$options=[]) {
         // Modified from PHP manual
