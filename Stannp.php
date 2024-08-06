@@ -144,7 +144,9 @@ class Stannp {
             $response = $this->curl_post ('recipients/new',$r);
             $this->info ("Stannp response: ".print_r($response,true),$v);
             if (!$response->success) {
-                $this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
+                //$this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
+                // that was not honouring aforementioned policy
+                $this->exception (104,"Failed to create recipient '{$r['clientref']}' for campaign/group '$name'");
                 return false;
             }
             $this->info ("Recipient created\n",$v);
