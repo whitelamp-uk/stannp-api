@@ -254,8 +254,8 @@ class Stannp {
         $result = curl_exec ($ch);
         $secs = time() - $start;
         curl_close ($ch);
-        if ($result===false || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
-            $this->log ("Stannp cURL POST");
+        if ($result===false) {
+            $this->log ("Stannp cURL POST returned false");
             $this->log (print_r($post,true));
             $this->log (print_r($options,true));
             $this->log (print_r($defaults,true));
