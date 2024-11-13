@@ -225,6 +225,23 @@ class Stannp {
             $this->exception (107,"Stannp cURL GET error");
             return false;
         }
+        // some cautious defaults
+        $remaining = 333;
+        $reset = 0;
+        foreach ($http_response_header as $header) {
+            $header = explode(':', $header, 2);
+            if (strtolower(trim($header[0])) == 'x-ratelimit-remaining') {
+                $remaining = trim($header[1]);
+            }
+            elseif (strtolower(trim($header[0])) == 'x-ratelimit-reset') {
+                $reset = trim($header[1]);
+            }
+        }
+        if ($remaining <= 10) {
+            $this->log("stannp curl_get rate limit remaining ". $remaining . " sleep for ". $reset);
+            sleep ($reset);
+        }
+
         return json_decode ($result,true);
     }
 
@@ -281,7 +298,7 @@ class Stannp {
         }
 
         if ($headers['x-ratelimit-remaining'] <= 10) { // leave a buffer of ten to be on the safe side
-            $this->log("rate limit remaining ". $headers['x-ratelimit-remaining'] . " sleep for ". $headers['x-ratelimit-reset']);
+            $this->log("stannp curl_post rate limit remaining ". $headers['x-ratelimit-remaining'] . " sleep for ". $headers['x-ratelimit-reset']);
             sleep($headers['x-ratelimit-reset']);
         }
 
@@ -349,7 +366,7 @@ class Stannp {
         if (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG) {
             error_log ($message);
         }
-        if (env_is_cli()) {
+        if (!function_exists('env_is_cli') || env_is_cli()) { // if the function doesn't exist we are definitely at the command line...
             echo rtrim($message)."\n";
         }
     }
