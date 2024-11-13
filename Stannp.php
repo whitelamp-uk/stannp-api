@@ -129,7 +129,6 @@ class Stannp {
             $fields = [
                 'full_name','address1','city','country','postcode'
             ];
-            $this->info ("Stannp checking recipient: ".print_r($r,true),$v);
             foreach ($fields as $f) {
                 if (!strlen($r[$f])) {
                     $this->exception (103,"`$f` is a compulsory Stannp field");
@@ -140,16 +139,14 @@ class Stannp {
                     return false;
                 }
             }
-            $this->info ("Stannp posting recipient\n",$v);
             $response = $this->curl_post ('recipients/new',$r);
-            $this->info ("Stannp response: ".print_r($response,true),$v);
             if (!$response->success) {
                 //$this->exception (104,"Failed to create recipient '{$r['ClientRef']}' for campaign/group '$name'");
                 // that was not honouring aforementioned policy
                 $this->exception (104,"Failed to create recipient '{$r['clientref']}' for campaign/group '$name'");
                 return false;
             }
-            $this->info ("Recipient created\n",$v);
+            $this->info ("Stannp recipient created: ".$r['clientref']."\n",$v);
         }
         // Add a new campaign using template ID and group ID
         $campaign = [
@@ -248,12 +245,29 @@ class Stannp {
             CURLOPT_TIMEOUT         => $this->timeout,
             CURLOPT_POSTFIELDS      => http_build_query ($post)
         ];    
+
         $ch = curl_init ();
         curl_setopt_array ($ch,$options+$defaults);
+        $headers = [];
+        // thank good ol' Stack Overflow for this bit
+        // this function is called by curl for each header received
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION,
+          function($curl, $header) use (&$headers)
+          {
+            $len = strlen($header);
+            $header = explode(':', $header, 2);
+            if (count($header) < 2) // ignore invalid headers
+              return $len;
+            $headers[strtolower(trim($header[0]))] = trim($header[1]); // original code had each line as an array
+            return $len;
+          }
+        );
+
         $start = time ();
         $result = curl_exec ($ch);
         $secs = time() - $start;
         curl_close ($ch);
+
         if ($result===false) {
             $this->log ("Stannp cURL POST returned false");
             $this->log (print_r($post,true));
@@ -265,6 +279,12 @@ class Stannp {
             $this->exception (109,"Stannp cURL POST error");
             return false;
         }
+
+        if ($headers['x-ratelimit-remaining'] <= 10) { // leave a buffer of ten to be on the safe side
+            $this->log("rate limit remaining ". $headers['x-ratelimit-remaining'] . " sleep for ". $headers['x-ratelimit-reset']);
+            sleep($headers['x-ratelimit-reset']);
+        }
+
         return json_decode ($result);
     }
 
