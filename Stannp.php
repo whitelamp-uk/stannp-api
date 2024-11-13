@@ -273,9 +273,9 @@ class Stannp {
           {
             $len = strlen($header);
             $header = explode(':', $header, 2);
-            if (count($header) < 2) // ignore invalid headers
-              return $len;
-            $headers[strtolower(trim($header[0]))] = trim($header[1]); // original code had each line as an array
+            if (count($header) >= 2) { // ignore invalid headers
+                $headers[strtolower(trim($header[0]))] = trim($header[1]); // original code preserved duplicate headers.
+            }
             return $len;
           }
         );
