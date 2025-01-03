@@ -13,6 +13,7 @@ class Stannp {
     protected $email_from;
     protected $group_list;
     protected $verbose;
+    protected $campaign_list;
 
     public function __construct ( ) {
         if (defined('STANNP_TIMEOUT')) {
@@ -180,13 +181,15 @@ class Stannp {
     }
 
     public function campaigns ($offset=0, $limit=0) {
-        $response = $this->curl_get ('campaigns/list', $offset, $limit);
-        if (!$response['success']) {
-            $this->exception (106,"Failed to get campaigns");
-            return false;
+        if (!$this->campaign_list) {
+            $response = $this->curl_get ('campaigns/list', $offset, $limit);
+            if (!$response['success']) {
+                $this->exception (106,"Failed to get campaigns");
+                return false;
+            }
+            $this->campaign_list = $response['data'];
         }
-        //print_r($response);
-        return $response['data'];
+        return $this->campaign_list; 
     }
 
     private function curl_get ($request, $offset=0, $limit=0) {   
@@ -214,6 +217,11 @@ class Stannp {
             false,
             $context
         );
+$this->log ($url);
+$dbt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+foreach ($dbt as $t) {
+    $this->log($t['file'].' '.$t['line'].' '.$t['function']);
+}
 /*
         if ($result===false || (defined('STANNP_ERROR_LOG') && STANNP_ERROR_LOG)) {
             $this->log ("Stannp cURL GET");
